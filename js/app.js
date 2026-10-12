@@ -160,6 +160,7 @@ function renderHome() {
       <span class="tiles">${tiles('PLACE')}</span>
       <span class="tiles">${tiles('ANIMAL')}</span>
     </h1>
+    <p class="byline">by Fitz Joseph</p>
     <p class="cats" aria-label="Categories: Name, Place, Animal, Food, Thing">
       ${CATEGORIES.map(c => `<span class="cat">${ICONS[c]} ${LABELS[c]}</span>`).join('')}
     </p>

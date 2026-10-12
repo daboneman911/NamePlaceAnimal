@@ -219,7 +219,7 @@ body.at-home {
 }
 
 .title-screen { text-align: center; padding: .5rem 0 .25rem; }
-.logo { display: grid; gap: .45rem; justify-items: center; margin: 0 0 1rem; }
+.logo { display: grid; gap: .45rem; justify-items: center; margin: 0 0 .6rem; }
 .tiles { display: flex; gap: clamp(.2rem, 1vw, .4rem); }
 .tile {
   --size: clamp(2.3rem, 11vw, 3.6rem);
@@ -280,3 +280,12 @@ details.rules[open] summary { margin-bottom: .6rem; }
 @media (prefers-reduced-motion: reduce) {
   .tile, .mode { animation: none; transition: none; }
 }
+
+.byline {
+  margin: 0 0 1rem; font-size: 1rem; font-style: italic; font-weight: 600;
+  color: var(--muted); letter-spacing: .04em;
+  animation: drop .6s .35s backwards ease-out;
+}
+/* The title screen already credits the author under the logo. */
+body.at-home .credits .author { display: none; }
+@media (prefers-reduced-motion: reduce) { .byline { animation: none; } }
