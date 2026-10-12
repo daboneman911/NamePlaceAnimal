@@ -48,3 +48,14 @@ npm test           # game-rule unit tests (Node 20+)
 - `js/engine.js` – pure game rules (reducer), unit-tested in `tests/`
 - `js/net.js` – host/client sessions over PeerJS
 - `js/app.js` – UI
+
+### Releasing
+
+```sh
+npm run bump 1.2.0   # sets package.json, js/version.js and every ?v= asset URL
+npm test
+```
+
+GitHub Pages caches files for 10 minutes and iOS Safari reuses cached JS/CSS even on
+reload, so asset URLs carry `?v=<version>`; bumping the version is what makes phones
+pick up a release. A test fails if any URL is left unstamped.

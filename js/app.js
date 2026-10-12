@@ -1,6 +1,6 @@
-import { CATEGORIES, ALPHABET, POINTS, autoValid, emptyAnswers, firstLetter } from './engine.js';
-import { createSession, normalizeCode } from './net.js';
-import { VERSION } from './version.js';
+import { CATEGORIES, ALPHABET, POINTS, autoValid, emptyAnswers, firstLetter } from './engine.js?v=1.1.2';
+import { createSession, normalizeCode } from './net.js?v=1.1.2';
+import { VERSION } from './version.js?v=1.1.2';
 
 const LABELS = { name: 'Name', place: 'Place', animal: 'Animal', food: 'Food', thing: 'Thing' };
 const ICONS = { name: '🙋', place: '📍', animal: '🐾', food: '🍎', thing: '🧸' };

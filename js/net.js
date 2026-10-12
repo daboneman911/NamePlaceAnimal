@@ -4,7 +4,7 @@
 // broker is used only to set up the WebRTC connections; game traffic is
 // peer-to-peer, so there is no backend to deploy.
 
-import { createGame, reduce, viewFor } from './engine.js';
+import { createGame, reduce, viewFor } from './engine.js?v=1.1.2';
 
 const PREFIX = 'nameplaceanimal-';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L

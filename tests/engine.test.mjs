@@ -121,3 +121,16 @@ test('displayed version matches package.json', async () => {
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
   assert.equal(VERSION, pkg.version);
 });
+
+// A stale ?v= means phones keep running cached code after a release.
+test('every local asset URL is stamped with the current version', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const read = p => readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+  const { version } = JSON.parse(await read('package.json'));
+  for (const f of ['index.html', 'js/app.js', 'js/net.js']) {
+    const text = await read(f);
+    const refs = [...text.matchAll(/(?:(?:href|src)="(?!https?:)([^"]+\.(?:css|js)[^"]*)"|from '(\.\/[^']+)')/g)].map(m => m[1] || m[2]);
+    assert.ok(refs.length, `no asset refs found in ${f}`);
+    for (const r of refs) assert.ok(r.endsWith(`?v=${version}`), `${f}: ${r} should end with ?v=${version} — run npm run bump`);
+  }
+});
