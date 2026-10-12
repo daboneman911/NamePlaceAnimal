@@ -114,3 +114,10 @@ test('random draw never repeats or uses excluded letters', () => {
   assert.equal(seen.size, 23);
   assert.equal(s.phase, 'over');
 });
+
+test('displayed version matches package.json', async () => {
+  const { VERSION } = await import('../js/version.js');
+  const { readFile } = await import('node:fs/promises');
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
+  assert.equal(VERSION, pkg.version);
+});

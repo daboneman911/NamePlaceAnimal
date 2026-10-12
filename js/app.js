@@ -1,7 +1,9 @@
 import { CATEGORIES, ALPHABET, POINTS, autoValid, emptyAnswers, firstLetter } from './engine.js';
 import { createSession, normalizeCode } from './net.js';
+import { VERSION } from './version.js';
 
 const LABELS = { name: 'Name', place: 'Place', animal: 'Animal', food: 'Food', thing: 'Thing' };
+const ICONS = { name: '🙋', place: '📍', animal: '🐾', food: '🍎', thing: '🧸' };
 const app = document.getElementById('app');
 const statusEl = document.getElementById('status');
 const toastEl = document.getElementById('toast');
@@ -50,8 +52,8 @@ async function begin(newMode) {
   if (newMode === 'client' && normalizeCode(home.code).length < 4) return toast('Enter the room code from the host.');
   store.set('npa.name', name);
   busy = true;
-  render();
   mode = newMode;
+  render();
   session = createSession({
     mode: newMode,
     name,
@@ -131,32 +133,67 @@ function render() {
       if (sel && el.setSelectionRange) try { el.setSelectionRange(...sel); } catch { /* number inputs */ }
     }
   }
+  document.body.classList.toggle('at-home', !view);
   if (view?.phase === 'playing') updatePlaying();
 }
 
 function renderHome() {
+  const dis = busy ? 'disabled' : '';
+  const tiles = word => [...word].map((ch, i) =>
+    `<span class="tile" style="--r:${((i * 37) % 9) - 4}deg">${ch}</span>`).join('');
+  const joinFirst = !!home.code;
+  const joinCard = `
+      <div class="mode join ${joinFirst ? 'featured' : ''}">
+        <span class="mode-icon" aria-hidden="true">🔗</span>
+        <span class="mode-title">Join a game</span>
+        <span class="mode-sub">Got a room code from a friend?</span>
+        <div class="join-row">
+          <input id="home-code" class="code-input" maxlength="8" autocapitalize="characters" autocomplete="off"
+            value="${esc(home.code)}" placeholder="CODE" aria-label="Room code">
+          <button class="btn primary" data-act="join" ${dis}>${busy && mode === 'client' ? '…' : 'Join'}</button>
+        </div>
+      </div>`;
   return `
-  <section class="card hero">
-    <h1>Name, Place, Animal, Food, Thing</h1>
-    <p class="lead">One letter. Five categories. Find a word for each that starts with the letter —
-      <strong>${POINTS} points</strong> for every answer the table accepts.</p>
-    <label class="field">
-      <span>Your name</span>
-      <input id="home-name" maxlength="20" autocomplete="nickname" value="${esc(home.name)}" placeholder="e.g. Sam">
-    </label>
-    <div class="row gap">
-      <button class="btn primary" data-act="solo" ${busy ? 'disabled' : ''}>Play solo</button>
-      <button class="btn" data-act="host" ${busy ? 'disabled' : ''}>Host online game</button>
-    </div>
-    <div class="divider"><span>or join a friend</span></div>
-    <div class="row gap">
-      <input id="home-code" class="code-input" maxlength="8" autocapitalize="characters" autocomplete="off"
-        value="${esc(home.code)}" placeholder="ROOM CODE" aria-label="Room code">
-      <button class="btn" data-act="join" ${busy ? 'disabled' : ''}>${busy ? 'Connecting…' : 'Join'}</button>
+  <section class="title-screen">
+    <h1 class="logo" aria-label="Name Place Animal">
+      <span class="tiles">${tiles('NAME')}</span>
+      <span class="tiles">${tiles('PLACE')}</span>
+      <span class="tiles">${tiles('ANIMAL')}</span>
+    </h1>
+    <p class="cats" aria-label="Categories: Name, Place, Animal, Food, Thing">
+      ${CATEGORIES.map(c => `<span class="cat">${ICONS[c]} ${LABELS[c]}</span>`).join('')}
+    </p>
+    <div class="spin-wrap" aria-hidden="true">
+      <span class="spin-label">Your letter is…</span>
+      <span class="tile spin" id="spin">A</span>
     </div>
   </section>
-  <section class="card rules">
-    <h2>How to play</h2>
+
+  <section class="card player-card">
+    <span class="avatar lg" id="home-avatar" aria-hidden="true">${esc(home.name.trim()[0]?.toUpperCase() || '?')}</span>
+    <label class="field grow">
+      <span>Who's playing?</span>
+      <input id="home-name" maxlength="20" autocomplete="nickname" value="${esc(home.name)}" placeholder="Enter your name">
+    </label>
+  </section>
+
+  <section class="modes" aria-label="Choose a game mode">
+    ${joinFirst ? joinCard : ''}
+    <button class="mode" data-act="solo" ${dis}>
+      <span class="mode-icon" aria-hidden="true">🎯</span>
+      <span class="mode-title">Solo</span>
+      <span class="mode-sub">Beat the clock and your best score</span>
+    </button>
+    <button class="mode" data-act="host" ${dis}>
+      <span class="mode-icon" aria-hidden="true">📡</span>
+      <span class="mode-title">${busy && mode === 'host' ? 'Opening room…' : 'Host a game'}</span>
+      <span class="mode-sub">Create a room and share the code</span>
+    </button>
+    ${joinFirst ? '' : joinCard}
+  </section>
+
+  <details class="card rules">
+    <summary>How to play</summary>
     <ol>
       <li>A letter is drawn at random, or chosen by a player (they take turns).</li>
       <li>Fill in a <b>Name</b>, <b>Place</b>, <b>Animal</b>, <b>Food</b> and <b>Thing</b> starting with that letter.</li>
@@ -164,8 +201,21 @@ function renderHome() {
       <li>Everyone reviews the answers. An answer counts unless most of the other players reject it.</li>
       <li>Each accepted answer scores ${POINTS}. Highest total after the last round wins.</li>
     </ol>
-  </section>`;
+  </details>`;
 }
+
+// Title-screen flourish: cycle the letter tile like a slot reel, pausing on
+// each pick. Skipped entirely for reduced-motion users.
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let spinTick = 0;
+setInterval(() => {
+  const el = document.getElementById('spin');
+  if (!el || reducedMotion.matches) return;
+  spinTick = (spinTick + 1) % 14;
+  if (spinTick > 8) { el.classList.add('landed'); return; }
+  el.classList.remove('landed');
+  el.textContent = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+}, 140);
 
 function playersList() {
   return `<ul class="players">${view.players.map(p => `
@@ -420,7 +470,11 @@ function footer(hideLeave) {
 
 app.addEventListener('input', e => {
   const t = e.target;
-  if (t.id === 'home-name') home.name = t.value;
+  if (t.id === 'home-name') {
+    home.name = t.value;
+    const av = document.getElementById('home-avatar');
+    if (av) av.textContent = t.value.trim()[0]?.toUpperCase() || '?';
+  }
   else if (t.id === 'home-code') { home.code = normalizeCode(t.value); t.value = home.code; }
   else if (t.dataset.cat && view?.phase === 'playing') {
     draft[t.dataset.cat] = t.value;
@@ -498,4 +552,5 @@ window.addEventListener('beforeunload', e => {
   if (session && isHost() && online() && view?.players.some(p => p.connected && p.id !== myId)) e.preventDefault();
 });
 
+document.getElementById('version').textContent = `v${VERSION}`;
 render();
